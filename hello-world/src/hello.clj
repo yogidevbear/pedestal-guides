@@ -23,6 +23,13 @@
       (ok resp)
       (not-found))))
 
+(def echo
+  {:name ::echo
+   :enter (fn [context]
+            (let [request (:request context)
+                  response (ok request)]
+               (assoc context :response response)))})
+
 (def routes
   (route/expand-routes
     #{["/greet" :get respond-hello :route-name :greet]
