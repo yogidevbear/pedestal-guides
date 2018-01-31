@@ -25,7 +25,8 @@
 
 (def routes
   (route/expand-routes
-    #{["/greet" :get respond-hello :route-name :greet]}))
+    #{["/greet" :get respond-hello :route-name :greet]
+      ["/echo" :get echo]}))
 
 (defn create-server []
   (http/create-server
