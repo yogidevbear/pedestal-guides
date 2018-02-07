@@ -39,8 +39,11 @@
    (fn [context]
      (let [nm       (get-in context [:request :query-params :name] "Unnamed List")
            new-list (make-list nm)
-           db-id    (str (gensym "l"))]
-       (assoc context :tx-data [assoc db-id new-list])))})
+           db-id    (str (gensym "l"))
+           url      (route/url-for :list-view :params {:list-id db-id})]
+       (assoc context
+              :response (created new-list "Location" url)
+              :tx-data [assoc db-id new-list])))})
 
 (def echo
   {:name :echo
