@@ -10,6 +10,38 @@
 (def created  (partial response 201))
 (def accepted (partial response 202))
 
+(defonce database (atom {}))
+
+(def db-interceptor
+  {:name :database-interceptor
+   :enter
+   (fn [context]
+     (update context :request assoc :database @database))
+   :leave
+   (fn [context]
+     (if-let [[op & args] (:tx-data context)]
+       (do
+         (apply swap! database op args)
+         (assoc-in context [:request :database] @database))
+       context))})
+
+(defn make-list [nm]
+  {:name  nm
+   :items {}})
+
+(defn make-list-item [nm]
+  {:name  nm
+   :done? false})
+
+(def list-create
+  {:name :list-create
+   :enter
+   (fn [context]
+     (let [nm       (get-in context [:request :query-params :name] "Unnamed List")
+           new-list (make-list nm)
+           db-id    (str (gensym "l"))]
+       (assoc context :tx-data [assoc db-id new-list])))})
+
 (def echo
   {:name :echo
    :enter
@@ -20,7 +52,7 @@
 
 (def routes
   (route/expand-routes
-   #{["/todo"                    :post   echo :route-name :list-create]
+   #{["/todo"                    :post   [db-interceptor list-create]]
      ["/todo"                    :get    echo :route-name :list-query-form]
      ["/todo/:list-id"           :get    echo :route-name :list-view]
      ["/todo/:list-id"           :post   echo :route-name :list-item-create]
@@ -51,3 +83,6 @@
 (defn restart []
   (stop-dev)
   (start-dev))
+
+(defn test-request [verb url]
+  (io.pedestal.test/response-for (::http/service-fn @server) verb url))
